@@ -1,16 +1,11 @@
-def unrpeateds(words):
+def unrepeateds(words):
+    tekraredenler = set()
     sonuc = []
-    tekrar_edenler = set()
-    harfler = list(words)
-
-
-    for char in harfler:
-        if harfler.count(char) > 1:
-            tekrar_edenler.add(char)
-    for char in harfler:
-        if char not in tekrar_edenler:
+    for char in words:
+        if char not in tekraredenler:
+            tekraredenler.add(char)
             sonuc.append(char)
-            return sonuc
-        
-words ="abcc"
-print(unrpeateds(words))
+    return ''.join(sonuc)
+
+words = "alperen"
+print(unrepeateds(words))
