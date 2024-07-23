@@ -1,6 +1,6 @@
 import argparse
 from scapy.all import rdpcap
-import numpy as np
+
 
 def calculate_inter_packet_intervals(file_path, source=None, destination=None):
     packets = rdpcap(file_path)
@@ -30,19 +30,13 @@ def calculate_inter_packet_intervals(file_path, source=None, destination=None):
         print("Not enough packets to calculate intervals.")
         return
 
-    min_time = np.min(intervals)
-    max_time = np.max(intervals)
-    avg_time = np.mean(intervals)
-    std_dev = np.std(intervals)
-
-    min_time_source = source_ips[intervals.index(min(intervals))]
-    max_time_source = source_ips[intervals.index(max(intervals))]
+    unique_sources = set(source_ips)
 
     print(f"Destination address: {destination}")
-    print(f"Min. time: {min_time:.2f} ms (source {min_time_source})")
-    print(f"Max. time: {max_time:.2f} ms (source {max_time_source})")
-    print(f"Avg. time: {avg_time:.2f} ms")
-    print(f"Std. dev.: {std_dev:.2f} ms")
+    print(f"Total packets: {len(packet_times)}")
+    print("Sources: ")
+    for src in unique_sources:
+        print(src)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Calculate inter-packet intervals from a PCAP file.")
