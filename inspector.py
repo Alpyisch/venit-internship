@@ -41,8 +41,8 @@ def calculate_inter_packet_intervals(file_path, source=None, destination=None, p
     avg_time = np.mean(intervals)
     std_dev = np.std(intervals)
 
-    min_time_source = source_ips[intervals.index(min(intervals))]
-    max_time_source = source_ips[intervals.index(max(intervals))]
+    min_time_source = source_ips[intervals.index(min_time)]
+    max_time_source = source_ips[intervals.index(max_time)]
     
     print(f"\nResults for file: {file_path}")
     if source:
@@ -72,17 +72,23 @@ def calculate_inter_packet_intervals(file_path, source=None, destination=None, p
             print(dst)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Calculate inter-packet intervals from two PCAP files.")
-    parser.add_argument("--file1", required=True, help="Path to the first PCAP file")
-    parser.add_argument("--file2", required=True, help="Path to the second PCAP file")
+    parser = argparse.ArgumentParser(description="Calculate inter-packet intervals from one or two PCAP files.")
+    parser.add_argument("file_paths", nargs='*', help="Path to the PCAP file(s)")
     parser.add_argument("--source", help="Source IP address to filter packets")
     parser.add_argument("--destination", help="Destination IP address to filter packets")
     parser.add_argument("--protocol", help="Protocol to filter packets (e.g., TCP, UDP)")
 
     args = parser.parse_args()
 
-    print(f"Analyzing file1: {args.file1}")
-    calculate_inter_packet_intervals(args.file1, args.source, args.destination, args.protocol)
-
-    print(f"Analyzing file2: {args.file2}")
-    calculate_inter_packet_intervals(args.file2, args.source, args.destination, args.protocol)
+    if len(args.file_paths) == 0:
+        print("No PCAP files provided.")
+    elif len(args.file_paths) == 1:
+        print(f"Analyzing single file: {args.file_paths[0]}")
+        calculate_inter_packet_intervals(args.file_paths[0], args.source, args.destination, args.protocol)
+    elif len(args.file_paths) == 2:
+        print(f"Analyzing file1: {args.file_paths[0]}")
+        calculate_inter_packet_intervals(args.file_paths[0], args.source, args.destination, args.protocol)
+        print(f"Analyzing file2: {args.file_paths[1]}")
+        calculate_inter_packet_intervals(args.file_paths[1], args.source, args.destination, args.protocol)
+    else:
+        print("Please provide one or two PCAP files.")
