@@ -33,28 +33,43 @@ def calculate_delays(file1_path, file2_path, source, destination, protocol=None)
         print("No matching packets found in the specified criteria.")
         return
 
-    packet_times1 = {float(packet.time): packet for packet in packets1}
-    packet_times2 = {float(packet.time): packet for packet in packets2}
+    packet_times1 = {}
+    packet_times2 = {}
+
+    for packet in packets1:
+        packet_id = packet['IP'].id
+        if packet_id not in packet_times1:
+            packet_times1[packet_id] = []
+        packet_times1[packet_id].append(float(packet.time))
+
+    for packet in packets2:
+        packet_id = packet['IP'].id
+        if packet_id not in packet_times2:
+            packet_times2[packet_id] = []
+        packet_times2[packet_id].append(float(packet.time))
 
     intervals = []
-    for time1 in sorted(packet_times1.keys()):
-        matching_times = [time2 for time2 in sorted(packet_times2.keys()) if time2 > time1]
-        if matching_times:
-            time2 = min(matching_times)
-            interval = (time2 - time1) * 1000  
-            intervals.append(interval)
+    for packet_id in packet_times1:
+        if packet_id in packet_times2:
+            for time1 in packet_times1[packet_id]:
+                matching_times = [time2 for time2 in packet_times2[packet_id] if time2 > time1]
+                if matching_times:
+                    time2 = min(matching_times)
+                    interval = (time2 - time1) * 1000  # Convert to milliseconds
+                    intervals.append((interval, packet_id, time1, time2))
 
     if not intervals:
-        print("Not enough packets to calculate intervals.")
+        print("Not enough matching packets to calculate intervals.")
         return
 
-    intervals.sort(reverse=True)  
+    # Calculate statistics
+    delays = [interval[0] for interval in intervals]
+    min_time = np.min(delays)
+    max_time = np.max(delays)
+    avg_time = np.mean(delays)
+    std_dev = np.std(delays)
 
-    min_time = np.min(intervals)
-    max_time = np.max(intervals)
-    avg_time = np.mean(intervals)
-    std_dev = np.std(intervals)
-
+    # Print results
     print(f"\nResults for packets from {file1_path} to {file2_path}")
     print(f"Total matched packets: {len(intervals)}")
     print(f"Min. delay: {min_time:.2f} ms")
@@ -62,9 +77,9 @@ def calculate_delays(file1_path, file2_path, source, destination, protocol=None)
     print(f"Avg. delay: {avg_time:.2f} ms")
     print(f"Std. dev.: {std_dev:.2f} ms")
     
-    print("\nAll intervals in desc order:")
-    for i, interval in enumerate(intervals, 1):
-        print(f"Packet {i}: {interval:.2f} ms")
+    print("\nAll intervals in descending order:")
+    for i, (interval, packet_id, time1, time2) in enumerate(intervals, 1):
+        print(f"Packet ID {packet_id}: {interval:.2f} ms - Start: {time1:.6f}, End: {time2:.6f}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Analyze PCAP files and calculate packet delays.")
