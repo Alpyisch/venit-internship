@@ -8,7 +8,6 @@ from inspector import analyze_file, calculate_delays, parse_arguments
 class TestInspector(unittest.TestCase):
 
     def setUp(self):
-        #Dummy File
         self.file1_path = 'file1.pcap'
         self.file2_path = 'file2.pcap'
         self.file_path = 'test_data.pcap'
@@ -21,7 +20,6 @@ class TestInspector(unittest.TestCase):
         wrpcap(self.file2_path, packets)
 
     def tearDown(self):
-        # Remove the Dummy File
         for path in [self.file1_path, self.file2_path, self.file_path]:
             if os.path.exists(path):
                 os.remove(path)
