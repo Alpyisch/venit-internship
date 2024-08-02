@@ -55,21 +55,20 @@ def calculate_delays(file1_path, file2_path, source, destination, protocol=None)
                 matching_times = [time2 for time2 in packet_times2[packet_id] if time2 > time1]
                 if matching_times:
                     time2 = min(matching_times)
-                    interval = (time2 - time1) * 1000  # Convert to milliseconds
+                    interval = (time2 - time1) * 1000  
                     intervals.append((interval, packet_id, time1, time2))
 
     if not intervals:
         print("Not enough matching packets to calculate intervals.")
         return
 
-    # Calculate statistics
-    delays = [interval[0] for interval in intervals]
-    min_time = np.min(delays)
-    max_time = np.max(delays)
-    avg_time = np.mean(delays)
-    std_dev = np.std(delays)
+    intervals.sort(reverse=True, key=lambda x: x[0])  
 
-    # Print results
+    min_time = np.min([interval[0] for interval in intervals])
+    max_time = np.max([interval[0] for interval in intervals])
+    avg_time = np.mean([interval[0] for interval in intervals])
+    std_dev = np.std([interval[0] for interval in intervals])
+
     print(f"\nResults for packets from {file1_path} to {file2_path}")
     print(f"Total matched packets: {len(intervals)}")
     print(f"Min. delay: {min_time:.2f} ms")
@@ -81,14 +80,17 @@ def calculate_delays(file1_path, file2_path, source, destination, protocol=None)
     for i, (interval, packet_id, time1, time2) in enumerate(intervals, 1):
         print(f"Packet ID {packet_id}: {interval:.2f} ms - Start: {time1:.6f}, End: {time2:.6f}")
 
-if __name__ == "__main__":
+def parse_arguments():
     parser = argparse.ArgumentParser(description="Analyze PCAP files and calculate packet delays.")
     parser.add_argument("file_paths", nargs='+', help="Path to the PCAP file(s)")
     parser.add_argument("--source", help="Source IP address to filter packets")
     parser.add_argument("--destination", help="Destination IP address to filter packets")
     parser.add_argument("--protocol", help="Protocol to filter packets (e.g., TCP, UDP)")
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+def main():
+    args = parse_arguments()
 
     if not args.source and not args.destination:
         print("Please provide source or destination IP address.")
@@ -114,3 +116,6 @@ if __name__ == "__main__":
         calculate_delays(file1_path, file2_path, args.source, args.destination, args.protocol)
     else:
         print("Please provide one or two PCAP files along with the necessary parameters.")
+
+if __name__ == "__main__":
+    main()
