@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch
-from scapy.all import rdpcap, IP, wrpcap
 import os
-import numpy as np
-from inspector import analyze_file, calculate_delays, parse_arguments
+from scapy.all import IP, wrpcap
+from inspector import analyze_file, calculate_delays, parse_arguments, ArgumentException
+import argparse
 
 class TestInspector(unittest.TestCase):
 
@@ -44,22 +44,40 @@ class TestInspector(unittest.TestCase):
 
     def test_file_format(self):
         valid_formats = ['.pcap', '.cap', '.pcang']
-        file_name = "test_file.pcap"  
+        file_name = "test_file.pcap"
         self.assertTrue(any(file_name.endswith(fmt) for fmt in valid_formats), 
                         f"File format should be one of {valid_formats}")
-        
+
     def test_analyze_file_data(self):
         packets = analyze_file(self.file_path, source="192.168.1.105", destination="192.168.1.111")
         self.assertEqual(len(packets), 1, "Expected to find one packet.")
         self.assertEqual(packets[0]['IP'].src, "192.168.1.105")
         self.assertEqual(packets[0]['IP'].dst, "192.168.1.111")
 
-    def test_calculate_delays_with_two_files(self):
-        calculate_delays(self.file1_path, self.file2_path, '192.168.1.105', '192.168.1.111')
+    @patch('argparse.ArgumentParser.parse_args')
+    def test_calculate_delays_with_one_file(self, mock_parse_args):
+        mock_parse_args.return_value = argparse.Namespace(
+            file_paths=['file.pcap'],
+            source=None,
+            destination=None
+        )
+        
+        with self.assertRaises(ArgumentException) as cm:
+            parse_arguments()
+        self.assertEqual(str(cm.exception), "Please provide source or destination IP address.")
 
-    def test_calculate_delays_with_one_file(self):
-        with self.assertRaises(SystemExit):
-            calculate_delays(self.file1_path, None, '192.168.1.105', '192.168.1.111')
+    @patch('argparse.ArgumentParser.parse_args')
+    def test_calculate_delays_with_two_files(self, mock_parse_args):
+        mock_parse_args.return_value = argparse.Namespace(
+            file_paths=['file1.pcap', 'file2.pcap'],
+            source='192.168.1.105',
+            destination='192.168.1.111'
+        )
+        
+        args = parse_arguments()
+        self.assertEqual(args.file_paths, ['file1.pcap', 'file2.pcap'])
+        self.assertEqual(args.source, '192.168.1.105')
+        self.assertEqual(args.destination, '192.168.1.111')
 
 if __name__ == '__main__':
     unittest.main()
