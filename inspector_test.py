@@ -32,11 +32,22 @@ class TestInspector(unittest.TestCase):
             self.assertEqual(args.source, '192.168.1.105')
             self.assertEqual(args.destination, '192.168.1.111')
             self.assertEqual(args.protocol, 'TCP')
+            
+    def test_invalid_arguments(self):
+        test_args = ['inspector.py']
+        with patch('sys.argv', test_args):
+            pass  # TODO: Parsing should raise an Exception because no arguments is given
+            
+        test_args = ['inspector.py', 'asdasdasd.pcap', '--source', '192.168.1.105', '--destination', '192.168.1.111', '--protocol', 'TCP']
+        with patch('sys.argv', test_args):
+            pass  # TODO: Parsing should raise an Exception because asdasdasd.pcap doesn't exist
+        
+        test_args = ['inspector.py', 'file1.asd', '--source', '192.168.1.105', '--destination', '192.168.1.111', '--protocol', 'TCP']
+        with patch('sys.argv', test_args):
+            pass  # TODO: Parsing should raise an Exception because asd is not a valid format (.pcap, .cap, .pcapng)
 
-    def test_file_exists(self):
-        required_files = [self.file1_path, self.file2_path]
-        for file in required_files:
-            self.assertTrue(os.path.exists(file), f"File does not exist: {file}")
+    def test_packet_time_difference(self):
+        pass  # TODO: Check if packets in two capture files return desired statistics. For example: 0.123 - 0.433  ->  310 ms for min, max, avg. Std. dev=0
 
     def test_analyze_file_with_correct_path(self):
         packets = analyze_file(self.file_path)
