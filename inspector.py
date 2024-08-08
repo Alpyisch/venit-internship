@@ -83,6 +83,8 @@ def calculate_delays(file1_path, file2_path, source, destination, protocol=None)
     print("\nAll intervals in descending order:")
     for i, (interval, packet_id, time1, time2) in enumerate(intervals, 1):
         print(f"Packet ID {packet_id}: {interval:.2f} ms - Start: {time1:.6f}, End: {time2:.6f}")
+        
+    return min_time, max_time, avg_time, std_dev
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Analyze PCAP files and calculate packet delays.")
