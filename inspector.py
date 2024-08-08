@@ -56,7 +56,7 @@ def calculate_delays(file1_path, file2_path, source, destination, protocol=None)
     for packet_id in packet_times1:
         if packet_id in packet_times2:
             for time1 in packet_times1[packet_id]:
-                matching_times = [time2 for time2 in packet_times2[packet_id] if time2 > time1]
+                matching_times = [time2 for time2 in packet_times2[packet_id]]
                 if matching_times:
                     time2 = min(matching_times)
                     interval = (time2 - time1) * 1000  
