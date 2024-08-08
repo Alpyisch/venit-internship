@@ -1,9 +1,10 @@
 import unittest
 from unittest.mock import patch
 import os
-from scapy.all import IP, wrpcap
+from scapy.all import IP, wrpcap,rdpcap
 from inspector import analyze_file, calculate_delays, parse_arguments, ArgumentException
 import argparse
+
 
 class TestInspector(unittest.TestCase):
 
@@ -36,18 +37,43 @@ class TestInspector(unittest.TestCase):
     def test_invalid_arguments(self):
         test_args = ['inspector.py']
         with patch('sys.argv', test_args):
-            pass  # TODO: Parsing should raise an Exception because no arguments is given
+            with self.assertRaises(SystemExit) as cm:
+                parse_arguments()
+        self.assertEqual(cm.exception.code, 2)
+
             
-        test_args = ['inspector.py', 'asdasdasd.pcap', '--source', '192.168.1.105', '--destination', '192.168.1.111', '--protocol', 'TCP']
+        test_args = ['inspector.py', 'asdasdasd.pcap', '--source', '192.168.1.105', '--destination', '192.168.1.111']
         with patch('sys.argv', test_args):
-            pass  # TODO: Parsing should raise an Exception because asdasdasd.pcap doesn't exist
+            with self.assertRaises(SystemExit) as cm:
+                parse_arguments()
+            self.assertTrue("asdasdasd.pcap" in str(cm.exception.exception))
         
         test_args = ['inspector.py', 'file1.asd', '--source', '192.168.1.105', '--destination', '192.168.1.111', '--protocol', 'TCP']
         with patch('sys.argv', test_args):
-            pass  # TODO: Parsing should raise an Exception because asd is not a valid format (.pcap, .cap, .pcapng)
+            with self.assertRaises(SystemExit) as cm:
+                parse_arguments()
+            self.assertEqual(cm.exception.code, 2)
 
     def test_packet_time_difference(self):
-        pass  # TODO: Check if packets in two capture files return desired statistics. For example: 0.123 - 0.433  ->  310 ms for min, max, avg. Std. dev=0
+        file1_path = 'file1.pcap'
+        file2_path = 'file2.pcap'
+
+        packets_file1 = rdpcap(file1_path)
+        packets_file2 = rdpcap(file2_path)
+
+
+        min_delay, max_delay, avg_delay, std_dev_delay = calculate_delays(packets_file1, packets_file2, source='192.168.1.105', destination='192.168.1.111')
+
+        expected_min = 3970.49
+        expected_max = 4175.55
+        expected_avg = 4061.89
+        expected_std_dev = 58.16 
+
+        self.assertAlmostEqual(min_delay, expected_min, delta=3970.49, msg=f"Expected min delay {expected_min}, got {min_delay}")
+        self.assertAlmostEqual(max_delay, expected_max, delta=4175.55, msg=f"Expected max delay {expected_max}, got {max_delay}")
+        self.assertAlmostEqual(avg_delay, expected_avg, delta=4061.89, msg=f"Expected avg delay {expected_avg}, got {avg_delay}")
+        self.assertAlmostEqual(std_dev_delay, expected_std_dev, delta=58.16, msg=f"Expected std dev {expected_std_dev}, got {std_dev_delay}")
+
 
     def test_analyze_file_with_correct_path(self):
         packets = analyze_file(self.file_path)
