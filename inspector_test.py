@@ -58,11 +58,7 @@ class TestInspector(unittest.TestCase):
         file1_path = 'file1.pcap'
         file2_path = 'file2.pcap'
 
-        packets_file1 = rdpcap(file1_path)
-        packets_file2 = rdpcap(file2_path)
-
-
-        min_delay, max_delay, avg_delay, std_dev_delay = calculate_delays(packets_file1, packets_file2, source='192.168.1.105', destination='192.168.1.111')
+        min_delay, max_delay, avg_delay, std_dev_delay = calculate_delays(file1_path, file2_path, source='192.168.1.105', destination='192.168.1.111')
 
         expected_min = 3970.49
         expected_max = 4175.55
