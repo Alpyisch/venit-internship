@@ -1,6 +1,7 @@
 import argparse
 from scapy.all import rdpcap
 import numpy as np
+import os
 
 class ArgumentException(Exception):
     """Custom exception for argument errors."""
@@ -92,23 +93,24 @@ def parse_arguments():
     parser.add_argument("--protocol", help="Protocol to filter packets (e.g., TCP, UDP)")
 
     args = parser.parse_args()
-    
+
+    for file_path in args.file_paths:
+        if not os.path.isfile(file_path):
+            raise ArgumentException(f"The file path '{file_path}' does not exist or is not a file.")
+
     if not args.source and not args.destination:
         raise ArgumentException("Please provide source or destination IP address.")
-    
-    elif len(args.file_paths) == 1:
-        if args.source:
-            pass
-        elif args.destination:
-            pass
-    elif len(args.file_paths) == 2 and args.source and args.destination:
-        pass
-    else:
-        raise ArgumentException("Please provide one or two PCAP files along with the necessary parameters.")
-    
-    return args
 
-    return parser.parse_args()
+    if len(args.file_paths) == 1:
+        if not (args.source or args.destination):
+            raise ArgumentException("Please provide either a source or destination IP address.")
+    elif len(args.file_paths) == 2:
+        if not (args.source and args.destination):
+            raise ArgumentException("When providing two PCAP files, you must provide both source and destination IP addresses.")
+    else:
+        raise ArgumentException("Please provide one or two PCAP files.")
+
+    return args
 
 def main():
     args = parse_arguments()
