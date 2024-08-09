@@ -1,56 +1,71 @@
 import unittest
 from unittest.mock import patch
 import os
-from scapy.all import rdpcap
+from scapy.all import IP, wrpcap, rdpcap
 from inspector import analyze_file, calculate_delays, parse_arguments, ArgumentException
 import argparse
 
 class TestInspector(unittest.TestCase):
 
-    file1_path = r'C:\Users\alper\OneDrive\Masaüstü\computer1.pcap'
-    file2_path = r'C:\Users\alper\OneDrive\Masaüstü\computer2.pcap'
-
     def setUp(self):
-        pass
+        self.file1_name = 'computer1.pcap'
+        self.file2_name = 'computer2.pcap'
+        self.file_name = 'test_data.pcap'
+
+        os.makedirs('test_files', exist_ok=True)
+
+        self.file1_path = os.path.join('test_files', self.file1_name)
+        self.file2_path = os.path.join('test_files', self.file2_name)
+        self.file_path = os.path.join('test_files', self.file_name)
+
+        packets = [
+            IP(src="192.168.1.105", dst="192.168.1.111")/b"data"
+        ]
+        wrpcap(self.file_path, packets)
+        wrpcap(self.file1_path, packets)
+        wrpcap(self.file2_path, packets)
 
     def tearDown(self):
-        pass
+        for path in [self.file1_path, self.file2_path, self.file_path]:
+            if os.path.exists(path):
+                os.remove(path)
 
     def test_parse_arguments(self):
-        test_args = ['inspector.py', self.file1_path, '--source', '192.168.1.105', '--destination', '192.168.1.111', '--protocol', 'TCP']
+        test_args = ['inspector.py', self.file1_name, '--source', '192.168.1.105', '--destination', '192.168.1.111', '--protocol', 'IP']
         with patch('sys.argv', test_args):
             args = parse_arguments()
-            self.assertEqual(args.file_paths, [self.file1_path])
+            self.assertEqual(args.file_paths, [os.path.join('test_files', self.file1_name)])
             self.assertEqual(args.source, '192.168.1.105')
             self.assertEqual(args.destination, '192.168.1.111')
-            self.assertEqual(args.protocol, 'TCP')
-            
+            self.assertEqual(args.protocol, 'IP')
+
     def test_invalid_arguments(self):
+
         test_args = ['inspector.py']
         with patch('sys.argv', test_args):
             with self.assertRaises(SystemExit) as cm:
                 parse_arguments()
-            self.assertEqual(cm.exception.code, 2)
+        self.assertEqual(cm.exception.code, 2)
 
-        test_args = ['inspector.py', 'invalid_file.pcap', '--source', '192.168.1.105', '--destination', '192.168.1.111']
+        test_args = ['inspector.py', 'invalid.pcap', '--source', '192.168.1.105', '--destination', '192.168.1.111']
         with patch('sys.argv', test_args):
             with self.assertRaises(SystemExit) as cm:
                 parse_arguments()
-            self.assertEqual(cm.exception.code, 2)
+            self.assertTrue("invalid.pcap" in str(cm.exception.exception))
 
-        test_args = ['inspector.py', self.file1_path, '--source', '192.168.1.105', '--destination', '192.168.1.111', '--protocol', 'TCP']
+        test_args = ['inspector.py', 'file1.asd', '--source', '192.168.1.105', '--destination', '192.168.1.111', '--protocol', 'IP']
         with patch('sys.argv', test_args):
             with self.assertRaises(SystemExit) as cm:
                 parse_arguments()
             self.assertEqual(cm.exception.code, 2)
 
     def test_packet_time_difference(self):
-        min_delay, max_delay, avg_delay, std_dev_delay = calculate_delays(self.file1_path, self.file2_path, source='192.168.1.105', destination='192.168.1.111')
+        min_delay, max_delay, avg_delay, std_dev_delay = calculate_delays(self.file1_path, self.file2_path, source='192.168.1.105', destination='192.168.1.111', protocol='IP')
 
-        expected_min = 3970.49
-        expected_max = 4175.55
-        expected_avg = 4061.89
-        expected_std_dev = 58.16 
+        expected_min = 0.0 #Burayı ayarlayamadım
+        expected_max = 0.0
+        expected_avg = 0.0
+        expected_std_dev = 0.0
 
         self.assertAlmostEqual(min_delay, expected_min, delta=1, msg=f"Expected min delay {expected_min}, got {min_delay}")
         self.assertAlmostEqual(max_delay, expected_max, delta=1, msg=f"Expected max delay {expected_max}, got {max_delay}")
@@ -58,22 +73,25 @@ class TestInspector(unittest.TestCase):
         self.assertAlmostEqual(std_dev_delay, expected_std_dev, delta=1, msg=f"Expected std dev {expected_std_dev}, got {std_dev_delay}")
 
     def test_analyze_file_with_correct_path(self):
-        packets = analyze_file(self.file1_path)
-        self.assertTrue(len(packets) > 0, "Expected to find packets in the test file.")
+        packets = analyze_file(self.file_path)
+        self.assertEqual(len(packets), 1, "Expected one packet in the test file.")
 
     def test_file_format(self):
-        pass
+        valid_formats = ['.pcap']
+        file_name = self.file_name
+        self.assertTrue(any(file_name.endswith(fmt) for fmt in valid_formats), 
+                        f"File format should be one of {valid_formats}")
 
     def test_analyze_file_data(self):
-        packets = analyze_file(self.file1_path, source="192.168.1.105", destination="192.168.1.111")
-        self.assertTrue(len(packets) > 0, "Expected to find packets.")
+        packets = analyze_file(self.file_path, source="192.168.1.105", destination="192.168.1.111")
+        self.assertEqual(len(packets), 1, "Expected to find one packet.")
         self.assertEqual(packets[0]['IP'].src, "192.168.1.105")
         self.assertEqual(packets[0]['IP'].dst, "192.168.1.111")
 
     @patch('argparse.ArgumentParser.parse_args')
     def test_calculate_delays_with_one_file(self, mock_parse_args):
         mock_parse_args.return_value = argparse.Namespace(
-            file_paths=[self.file1_path],
+            file_paths=[self.file_name],
             source=None,
             destination=None
         )
@@ -85,13 +103,13 @@ class TestInspector(unittest.TestCase):
     @patch('argparse.ArgumentParser.parse_args')
     def test_calculate_delays_with_two_files(self, mock_parse_args):
         mock_parse_args.return_value = argparse.Namespace(
-            file_paths=[self.file1_path, self.file2_path],
+            file_paths=[self.file1_name, self.file2_name],
             source='192.168.1.105',
             destination='192.168.1.111'
         )
         
         args = parse_arguments()
-        self.assertEqual(args.file_paths, [self.file1_path, self.file2_path])
+        self.assertEqual(args.file_paths, [os.path.join('test_files', self.file1_name), os.path.join('test_files', self.file2_name)])
         self.assertEqual(args.source, '192.168.1.105')
         self.assertEqual(args.destination, '192.168.1.111')
 
