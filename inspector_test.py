@@ -47,15 +47,15 @@ class TestInspector(unittest.TestCase):
 
         test_args = ['inspector.py', 'asdasdasd.pcap', '--source', '192.168.1.105', '--destination', '192.168.1.111']
         with patch('sys.argv', test_args):
-            with self.assertRaises(SystemExit) as cm:
+            with self.assertRaises(ArgumentException) as cm:
                 parse_arguments()
-            self.assertTrue("asdasdasd.pcap" in str(cm.exception.exception))
+            self.assertTrue("asdasdasd.pcap" in str(cm.exception))
         
         test_args = ['inspector.py', 'file1.asd', '--source', '192.168.1.105', '--destination', '192.168.1.111', '--protocol', 'TCP']
         with patch('sys.argv', test_args):
-            with self.assertRaises(SystemExit) as cm:
+            with self.assertRaises(ArgumentException) as cm:
                 parse_arguments()
-            self.assertEqual(cm.exception.code, 2)
+            self.assertIn(".asd is not a valid file format", str(cm.exception))
 
     def test_packet_time_difference(self):
         min_delay, max_delay, avg_delay, std_dev_delay = calculate_delays(self.file1_path, self.file2_path, source='192.168.1.105', destination='192.168.1.111')
