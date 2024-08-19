@@ -96,7 +96,12 @@ def parse_arguments():
 
     args = parser.parse_args()
 
+    valid_formats = ['.pcap', '.cap', '.pcang']
+    
     for file_path in args.file_paths:
+        if not any(file_path.endswith(fmt) for fmt in valid_formats):
+            raise ArgumentException(f"{file_path} is not a valid file format. Supported formats are: {', '.join(valid_formats)}")
+        
         if not os.path.isfile(file_path):
             raise ArgumentException(f"The file path '{file_path}' does not exist or is not a file.")
 
