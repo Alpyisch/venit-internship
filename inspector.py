@@ -1,6 +1,11 @@
 import argparse
 from scapy.all import rdpcap
 import numpy as np
+import os
+
+class ArgumentException(Exception):
+    """Custom exception for argument errors."""
+    pass
 
 def analyze_file(file_path, source=None, destination=None, protocol=None):
     try:
@@ -52,24 +57,23 @@ def calculate_delays(file1_path, file2_path, source, destination, protocol=None)
     for packet_id in packet_times1:
         if packet_id in packet_times2:
             for time1 in packet_times1[packet_id]:
-                matching_times = [time2 for time2 in packet_times2[packet_id] if time2 > time1]
+                matching_times = [time2 for time2 in packet_times2[packet_id]]
                 if matching_times:
                     time2 = min(matching_times)
-                    interval = (time2 - time1) * 1000  # Convert to milliseconds
+                    interval = (time2 - time1) * 1000  
                     intervals.append((interval, packet_id, time1, time2))
 
     if not intervals:
         print("Not enough matching packets to calculate intervals.")
         return
 
-    # Calculate statistics
-    delays = [interval[0] for interval in intervals]
-    min_time = np.min(delays)
-    max_time = np.max(delays)
-    avg_time = np.mean(delays)
-    std_dev = np.std(delays)
+    intervals.sort(reverse=True, key=lambda x: x[0])  
 
-    # Print results
+    min_time = np.min([interval[0] for interval in intervals])
+    max_time = np.max([interval[0] for interval in intervals])
+    avg_time = np.mean([interval[0] for interval in intervals])
+    std_dev = np.std([interval[0] for interval in intervals])
+
     print(f"\nResults for packets from {file1_path} to {file2_path}")
     print(f"Total matched packets: {len(intervals)}")
     print(f"Min. delay: {min_time:.2f} ms")
@@ -80,8 +84,10 @@ def calculate_delays(file1_path, file2_path, source, destination, protocol=None)
     print("\nAll intervals in descending order:")
     for i, (interval, packet_id, time1, time2) in enumerate(intervals, 1):
         print(f"Packet ID {packet_id}: {interval:.2f} ms - Start: {time1:.6f}, End: {time2:.6f}")
+        
+    return min_time, max_time, avg_time, std_dev
 
-if __name__ == "__main__":
+def parse_arguments():
     parser = argparse.ArgumentParser(description="Analyze PCAP files and calculate packet delays.")
     parser.add_argument("file_paths", nargs='+', help="Path to the PCAP file(s)")
     parser.add_argument("--source", help="Source IP address to filter packets")
@@ -89,6 +95,32 @@ if __name__ == "__main__":
     parser.add_argument("--protocol", help="Protocol to filter packets (e.g., TCP, UDP)")
 
     args = parser.parse_args()
+
+    valid_formats = ['.pcap', '.cap', '.pcang']
+    
+    for file_path in args.file_paths:
+        if not any(file_path.endswith(fmt) for fmt in valid_formats):
+            raise ArgumentException(f"{file_path} is not a valid file format. Supported formats are: {', '.join(valid_formats)}")
+        
+        if not os.path.isfile(file_path):
+            raise ArgumentException(f"The file path '{file_path}' does not exist or is not a file.")
+
+    if not args.source and not args.destination:
+        raise ArgumentException("Please provide source or destination IP address.")
+
+    if len(args.file_paths) == 1:
+        if not (args.source or args.destination):
+            raise ArgumentException("Please provide either a source or destination IP address.")
+    elif len(args.file_paths) == 2:
+        if not (args.source and args.destination):
+            raise ArgumentException("When providing two PCAP files, you must provide both source and destination IP addresses.")
+    else:
+        raise ArgumentException("Please provide one or two PCAP files.")
+
+    return args
+
+def main():
+    args = parse_arguments()
 
     if not args.source and not args.destination:
         print("Please provide source or destination IP address.")
@@ -114,3 +146,6 @@ if __name__ == "__main__":
         calculate_delays(file1_path, file2_path, args.source, args.destination, args.protocol)
     else:
         print("Please provide one or two PCAP files along with the necessary parameters.")
+
+if __name__ == "__main__":
+    main()
