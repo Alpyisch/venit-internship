@@ -3,6 +3,8 @@ import re
 
 def count_occurrences(pattern, file_path):
     count = 0
+    if '*' in pattern:
+        pattern = pattern.replace('*', '.*')
     regex = re.compile(pattern)
     with open(file_path, 'r') as file:
         for line in file:
