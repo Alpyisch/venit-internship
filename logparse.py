@@ -5,7 +5,10 @@ def count_occurrences(pattern, file_path):
     count = 0
     if '*' in pattern:
         pattern = pattern.replace('*', '.*')
-    regex = re.compile(pattern)
+        regex = re.compile(r'\b' + pattern + r'\b')
+    else:
+        regex = re.compile(r'\b' + re.escape(pattern) + r'\b')
+
     with open(file_path, 'r') as file:
         for line in file:
             matches = regex.findall(line)
