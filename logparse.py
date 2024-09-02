@@ -6,6 +6,10 @@ def clean_line(line):
     line = re.sub(r'[.,!?]*$', '', line)
     return line
 
+def remove_severity(line):
+    line = re.sub(r'^(INFO|WARN|ERROR|FATAL|DEBUG):\s*', '', line)
+    return line
+
 def count_occurrences(pattern, file_path):
     count = 0
     if pattern.startswith('*') and not pattern.endswith('*'):
@@ -18,15 +22,19 @@ def count_occurrences(pattern, file_path):
         core_pattern = re.escape(pattern[1:-1])
         regex = re.compile(rf'{core_pattern}')
     else:
-        core_pattern = re.escape(pattern)
-        regex = re.compile(rf'^{core_pattern}$')
+        regex = re.compile(rf'^{re.escape(pattern)}$')
 
     with open(file_path, 'r') as file:
         for line in file:
             line = line.strip()
             cleaned_line = clean_line(line)
-            if regex.search(cleaned_line):
-                count += 1
+            no_severity_line = remove_severity(cleaned_line)
+            if pattern.startswith('*') and pattern.endswith('*'):
+                if re.search(rf'{re.escape(pattern[1:-1])}', no_severity_line):
+                    count += 1
+            else:
+                if regex.search(no_severity_line):
+                    count += 1
     return count
 
 def main():
