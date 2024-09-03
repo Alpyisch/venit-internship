@@ -2,12 +2,8 @@ import argparse
 import re
 
 def clean_line(line):
-    line = re.sub(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} ', '', line)
+    line = re.sub(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [A-Z]+:\s*', '', line)
     line = re.sub(r'[.,!?]*$', '', line)
-    return line
-
-def remove_severity(line):
-    line = re.sub(r'^(INFO|WARN|ERROR|FATAL|DEBUG):\s*', '', line)
     return line
 
 def count_occurrences(pattern, file_path):
@@ -28,13 +24,8 @@ def count_occurrences(pattern, file_path):
         for line in file:
             line = line.strip()
             cleaned_line = clean_line(line)
-            no_severity_line = remove_severity(cleaned_line)
-            if pattern.startswith('*') and pattern.endswith('*'):
-                if re.search(rf'{re.escape(pattern[1:-1])}', no_severity_line):
-                    count += 1
-            else:
-                if regex.search(no_severity_line):
-                    count += 1
+            if regex.search(cleaned_line):
+                count += 1
     return count
 
 def main():
