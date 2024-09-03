@@ -2,7 +2,7 @@ import argparse
 import re
 
 def clean_line(line):
-    line = re.sub(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [A-Z]+:\s*', '', line)
+    line = re.sub(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [A-Za-z0-9]+:\s*', '', line)
     line = re.sub(r'[.,!?]*$', '', line)
     return line
 
