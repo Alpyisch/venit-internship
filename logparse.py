@@ -9,34 +9,52 @@ def extract_severity(line):
     match = re.match(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} ([A-Z]+):', line)
     return match.group(1) if match else ''
 
+def create_regex(pattern):
+    if pattern is None:
+        return None
+    
+    if pattern.startswith('*') and pattern.endswith('*'):
+        pattern = pattern.replace('*', '.*')
+    elif pattern.startswith('*'):
+        pattern = '.*' + pattern[1:]
+    elif pattern.endswith('*'):
+        pattern = pattern[:-1] + '.*'
+    else:
+        pattern = pattern
+    return re.compile(pattern)
+
 def count_occurrences(pattern=None, severity=None, file_path=None):
     count = 0
-    if pattern:
-        pattern = pattern.replace('*', '.*')
-        regex = re.compile(pattern)
-    else:
-        regex = None
-
-    if severity:
-        severity = severity.replace('*', '.*')
-        severity_regex = re.compile(severity)
-    else:
-        severity_regex = None
+    pattern_regex = create_regex(pattern) if pattern else None
+    severity_regex = create_regex(severity) if severity else None
 
     with open(file_path, 'r') as file:
         for line in file:
             line = line.strip()
             line_severity = extract_severity(line)
+            cleaned_line = clean_line(line)
             
-            if severity_regex and severity_regex.match(line_severity):
-                if not regex:
-                    count += 1
-                elif regex.search(clean_line(line)):
-                    count += 1
-            elif not severity_regex and regex:
-                if regex.search(clean_line(line)):
-                    count += 1
+            if severity_regex and not severity_regex.match(line_severity):
+                continue
+            
+            if pattern_regex:
+                if pattern.startswith('*') and not pattern.endswith('*'):
+                    if not re.search(pattern_regex.pattern[2:] + '$', cleaned_line):
+                        continue
+                elif pattern.endswith('*') and not pattern.startswith('*'):
+                    if not re.search('^' + pattern_regex.pattern[:-2], cleaned_line):
+                        continue
+                elif pattern.startswith('*') and pattern.endswith('*'):
+                    if not pattern_regex.search(cleaned_line):
+                        continue
+                else:
+                    if not pattern_regex.search(cleaned_line):
+                        continue
+            
+            count += 1
+
     return count
+
 
 def main():
     parser = argparse.ArgumentParser(description="Counts a specific pattern in the log file.")
