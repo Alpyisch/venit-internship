@@ -36,7 +36,6 @@ def count_occurrences(pattern=None, severity=None, file_path=None):
             
             if severity_regex and not severity_regex.match(line_severity):
                 continue
-            
             if pattern_regex:
                 if pattern.startswith('*') and not pattern.endswith('*'):
                     if not re.search(pattern_regex.pattern[2:] + '$', cleaned_line):
@@ -48,13 +47,11 @@ def count_occurrences(pattern=None, severity=None, file_path=None):
                     if not pattern_regex.search(cleaned_line):
                         continue
                 else:
-                    if not pattern_regex.search(cleaned_line):
-                        continue
-            
+                    if pattern == cleaned_line:
+                        count += 1
+                    continue
             count += 1
-
     return count
-
 
 def main():
     parser = argparse.ArgumentParser(description="Counts a specific pattern in the log file.")
