@@ -20,7 +20,8 @@ def create_regex(pattern):
     elif pattern.endswith('*'):
         pattern = pattern[:-1] + '.*'
     else:
-        pattern = pattern
+        pattern = f'^{pattern}$'
+
     return re.compile(pattern)
 
 def count_occurrences(pattern=None, severity=None, file_path=None):
@@ -33,25 +34,55 @@ def count_occurrences(pattern=None, severity=None, file_path=None):
             line = line.strip()
             line_severity = extract_severity(line)
             cleaned_line = clean_line(line)
-            
-            if severity_regex and not severity_regex.match(line_severity):
-                continue
-            if pattern_regex:
-                if pattern.startswith('*') and not pattern.endswith('*'):
-                    if not re.search(pattern_regex.pattern[2:] + '$', cleaned_line):
-                        continue
-                elif pattern.endswith('*') and not pattern.startswith('*'):
-                    if not re.search('^' + pattern_regex.pattern[:-2], cleaned_line):
-                        continue
-                elif pattern.startswith('*') and pattern.endswith('*'):
-                    if not pattern_regex.search(cleaned_line):
-                        continue
-                else:
-                    if pattern == cleaned_line:
+
+            # Check severity if severity regex is provided
+            if severity_regex:
+                if not severity.startswith('*') and not severity.endswith('*'):
+                    # Check if severity is the only word in the line
+                    if line_severity == severity and line_severity == cleaned_line:
                         count += 1
                     continue
-            count += 1
+                elif severity.startswith('*') and not severity.endswith('*'):
+                    # Check if severity ends with specified pattern
+                    if re.search(severity_regex.pattern[2:] + '$', line_severity):
+                        count += 1
+                    continue
+                elif severity.endswith('*') and not severity.startswith('*'):
+                    # Check if severity starts with specified pattern
+                    if re.search('^' + severity_regex.pattern[:-2], line_severity):
+                        count += 1
+                    continue
+                elif severity.startswith('*') and severity.endswith('*'):
+                    # Check if severity contains specified pattern
+                    if severity_regex.search(line_severity):
+                        count += 1
+                    continue
+
+            # Check pattern if pattern regex is provided
+            if pattern_regex:
+                if not pattern.startswith('*') and not pattern.endswith('*'):
+                    # Check if pattern is the only word in the line
+                    if cleaned_line == pattern and cleaned_line == cleaned_line.split()[0]:
+                        count += 1
+                    continue
+                elif pattern.startswith('*') and not pattern.endswith('*'):
+                    # Check if pattern ends with specified pattern
+                    if re.search(pattern_regex.pattern[2:] + '$', cleaned_line):
+                        count += 1
+                    continue
+                elif pattern.endswith('*') and not pattern.startswith('*'):
+                    # Check if pattern starts with specified pattern
+                    if re.search('^' + pattern_regex.pattern[:-2], cleaned_line):
+                        count += 1
+                    continue
+                elif pattern.startswith('*') and pattern.endswith('*'):
+                    # Check if pattern contains specified pattern
+                    if pattern_regex.search(cleaned_line):
+                        count += 1
+                    continue
+
     return count
+
 
 def main():
     parser = argparse.ArgumentParser(description="Counts a specific pattern in the log file.")
@@ -65,11 +96,13 @@ def main():
         pattern = args.text
         severity = args.severity
         log_file = args.log_file
-        count = count_occurrences(pattern, severity, log_file)
+
         if pattern:
-            print(f'Matched logs with text "{pattern}": {count}')
+            count_text = count_occurrences(pattern=pattern, file_path=log_file)
+            print(f'Matched logs with text "{pattern}": {count_text}')
         if severity:
-            print(f'Matched logs with severity "{severity}": {count}')
+            count_severity = count_occurrences(pattern=None, severity=severity, file_path=log_file)
+            print(f'Matched logs with severity "{severity}": {count_severity}')
 
 if __name__ == '__main__':
     main()
