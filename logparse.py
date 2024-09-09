@@ -35,57 +35,51 @@ def count_occurrences(pattern=None, severity=None, file_path=None):
             line_severity = extract_severity(line)
             cleaned_line = clean_line(line)
 
-            # Check severity if severity regex is provided
+            if pattern_regex and severity_regex:
+                if pattern_regex.search(cleaned_line) and severity_regex.search(line_severity):
+                    count += 1
+                continue
+
             if severity_regex:
                 if not severity.startswith('*') and not severity.endswith('*'):
-                    # Check if severity is the only word in the line
                     if line_severity == severity and line_severity == cleaned_line:
                         count += 1
                     continue
                 elif severity.startswith('*') and not severity.endswith('*'):
-                    # Check if severity ends with specified pattern
                     if re.search(severity_regex.pattern[2:] + '$', line_severity):
                         count += 1
                     continue
                 elif severity.endswith('*') and not severity.startswith('*'):
-                    # Check if severity starts with specified pattern
                     if re.search('^' + severity_regex.pattern[:-2], line_severity):
                         count += 1
                     continue
                 elif severity.startswith('*') and severity.endswith('*'):
-                    # Check if severity contains specified pattern
                     if severity_regex.search(line_severity):
                         count += 1
                     continue
 
-            # Check pattern if pattern regex is provided
             if pattern_regex:
                 if not pattern.startswith('*') and not pattern.endswith('*'):
-                    # Check if pattern is the only word in the line
                     if cleaned_line == pattern and cleaned_line == cleaned_line.split()[0]:
                         count += 1
                     continue
                 elif pattern.startswith('*') and not pattern.endswith('*'):
-                    # Check if pattern ends with specified pattern
                     if re.search(pattern_regex.pattern[2:] + '$', cleaned_line):
                         count += 1
                     continue
                 elif pattern.endswith('*') and not pattern.startswith('*'):
-                    # Check if pattern starts with specified pattern
                     if re.search('^' + pattern_regex.pattern[:-2], cleaned_line):
                         count += 1
                     continue
                 elif pattern.startswith('*') and pattern.endswith('*'):
-                    # Check if pattern contains specified pattern
                     if pattern_regex.search(cleaned_line):
                         count += 1
                     continue
-
     return count
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Counts a specific pattern in the log file.")
+    parser = argparse.ArgumentParser(description="Counts a specific pattern and/or severity in the log file.")
     parser.add_argument('command', choices=['count'], help='The action you want to perform')
     parser.add_argument('--text', help='The text or pattern you want to search for')
     parser.add_argument('--severity', help='The severity level you want to search for')
@@ -97,12 +91,9 @@ def main():
         severity = args.severity
         log_file = args.log_file
 
-        if pattern:
-            count_text = count_occurrences(pattern=pattern, file_path=log_file)
-            print(f'Matched logs with text "{pattern}": {count_text}')
-        if severity:
-            count_severity = count_occurrences(pattern=None, severity=severity, file_path=log_file)
-            print(f'Matched logs with severity "{severity}": {count_severity}')
+        if pattern or severity:
+            count_combined = count_occurrences(pattern=pattern, severity=severity, file_path=log_file)
+            print(f'Matched logs with severity "{severity}" and text "{pattern}": {count_combined}')
 
 if __name__ == '__main__':
     main()
