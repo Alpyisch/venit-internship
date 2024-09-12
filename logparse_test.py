@@ -6,59 +6,114 @@ class LogParseTest(unittest.TestCase):
     def setUp(self):
         self.log_file_path = r'C:\Users\alper\OneDrive\Masaüstü\Alpi.log'
 
-    @patch('builtins.open', new_callable=mock_open, read_data="2024-09-09 12:00:00 INFO: User logged in\n")
-    def test_count_text_only(self, mock_file):
-        pattern = "User*"
-        count = count_occurrences(pattern=pattern, file_path=self.log_file_path)
-        self.assertEqual(count, 1)
-
-    @patch('builtins.open', new_callable=mock_open, read_data="2024-09-09 12:00:00 INFO: User logged in\n2024-09-09 12:03:00 INFO: User logged out\n")
-    def test_count_severity_only(self, mock_file):
+    @patch('builtins.open', new_callable=mock_open, read_data="""2024-09-09 12:00:00 INFO: User logged in
+2024-09-09 12:01:00 ERROR: System failure
+2024-09-09 12:02:00 WARNING: Low memory
+2024-09-09 12:03:00 INFO: System started""")
+    def test_count_user_info_with_wildcards(self, mock_file):
+        pattern = "*User*"
         severity = "*INFO*"
-        count = count_occurrences(severity=severity, file_path=self.log_file_path)
-        self.assertEqual(count, 2)
+        count = count_occurrences(pattern=pattern, severity=severity, file_path=self.log_file_path)
+        self.assertEqual(count, 1)
+    
+    @patch('builtins.open', new_callable=mock_open, read_data="""2024-09-09 12:00:00 INFO: User logged in
+2024-09-09 12:01:00 ERROR: System failure
+2024-09-09 12:02:00 WARNING: Low memory
+2024-09-09 12:03:00 INFO: System started""")
+    def test_count_user_info_no_end_wildcard(self, mock_file):
+        pattern = "User*"
+        severity = "INFO*"
+        count = count_occurrences(pattern=pattern, severity=severity, file_path=self.log_file_path)
+        self.assertEqual(count, 1)
 
     @patch('builtins.open', new_callable=mock_open, read_data="""2024-09-09 12:00:00 INFO: User logged in
 2024-09-09 12:01:00 ERROR: System failure
 2024-09-09 12:02:00 WARNING: Low memory
 2024-09-09 12:03:00 INFO: System started""")
-    
-    def test_count_combined(self, mock_file):
-        pattern = "*User*"
-        severity = "*INFO*"
+    def test_count_user_info_no_severity_wildcard(self, mock_file):
+        pattern = "*User"
+        severity = "INFO"
         count = count_occurrences(pattern=pattern, severity=severity, file_path=self.log_file_path)
-        self.assertEqual(count, 1)
+        self.assertEqual(count, 0)
 
+    @patch('builtins.open', new_callable=mock_open, read_data="""2024-09-09 12:00:00 INFO: User logged in
+2024-09-09 12:01:00 ERROR: System failure
+2024-09-09 12:02:00 WARNING: Low memory
+2024-09-09 12:03:00 INFO: System started""")
+    def test_count_user_exact_match(self, mock_file):
+        pattern = "User"
+        severity = "INFO"
+        count = count_occurrences(pattern=pattern, severity=severity, file_path=self.log_file_path)
+        self.assertEqual(count, 0)
+    
 
     @patch('builtins.open', new_callable=mock_open, read_data="2024-09-09 12:00:00 INFO: User logged in\n")
-    def test_count_text_with_wildcard(self, mock_file):
+    def test_count_user_exact_pattern_only(self, mock_file):
+        pattern = "User"
+        count = count_occurrences(pattern=pattern, file_path=self.log_file_path)
+        self.assertEqual(count, 0)
+
+    @patch('builtins.open', new_callable=mock_open, read_data="2024-09-09 12:00:00 INFO: User logged in\n")
+    def test_count_user_pattern_wildcard(self, mock_file):
         pattern = "*User*"
         count = count_occurrences(pattern=pattern, file_path=self.log_file_path)
         self.assertEqual(count, 1)
 
+    @patch('builtins.open', new_callable=mock_open, read_data="2024-09-09 12:00:00 INFO: User logged in\n")
+    def test_count_user_no_wildcard(self, mock_file):
+        pattern = "*User"
+        count = count_occurrences(pattern=pattern, file_path=self.log_file_path)
+        self.assertEqual(count, 0)
+
+    @patch('builtins.open', new_callable=mock_open, read_data="2024-09-09 12:00:00 INFO: User logged in\n")
+    def test_count_user_starting_wildcard(self, mock_file):
+        pattern = "User*"
+        count = count_occurrences(pattern=pattern, file_path=self.log_file_path)
+        self.assertEqual(count, 1)
+
+
     @patch('builtins.open', new_callable=mock_open, read_data="2024-09-09 12:00:00 INFO: User logged in\n2024-09-09 12:03:00 INFO: User logged out\n")
-    def test_count_severity_with_wildcard(self, mock_file):
+    def test_count_severity_info_only(self, mock_file):
+        severity = "INFO"
+        count = count_occurrences(severity=severity, file_path=self.log_file_path)
+        self.assertEqual(count, 2)
+
+    @patch('builtins.open', new_callable=mock_open, read_data="2024-09-09 12:00:00 INFO: User logged in\n2024-09-09 12:03:00 INFO: User logged out\n")
+    def test_count_severity_info_wildcard(self, mock_file):
         severity = "*INFO*"
         count = count_occurrences(severity=severity, file_path=self.log_file_path)
         self.assertEqual(count, 2)
-        
-def check_pattern_match(pattern, line):
-    if not pattern:
-        return True
+
+    @patch('builtins.open', new_callable=mock_open, read_data="2024-09-09 12:00:00 INFO: User logged in\n2024-09-09 12:03:00 INFO: User logged out\n")
+    def test_count_severity_starting_info_wildcard(self, mock_file):
+        severity = "INFO*"
+        count = count_occurrences(severity=severity, file_path=self.log_file_path)
+        self.assertEqual(count, 2)
+
+    @patch('builtins.open', new_callable=mock_open, read_data="2024-09-09 12:00:00 INFO: User logged in\n2024-09-09 12:03:00 INFO: User logged out\n")
+    def test_count_severity_ending_info_wildcard(self, mock_file):
+        severity = "*INFO"
+        count = count_occurrences(severity=severity, file_path=self.log_file_path)
+        self.assertEqual(count, 2)
+
+
+    @patch('builtins.open', new_callable=mock_open, read_data="2024-09-09 12:02:00 WARNING: Low memory\n")
+    def test_count_pattern_not_found(self, mock_file):
+        pattern = "asd"
+        count = count_occurrences(pattern=pattern, file_path=self.log_file_path)
+        self.assertEqual(count, 0)
+
+    @patch('builtins.open', new_callable=mock_open, read_data="2024-09-09 12:00:00 INFO: User logged in\n")
+    def test_count_pattern_not_found_with_wildcard(self, mock_file):
+        pattern = "asd*"
+        count = count_occurrences(pattern=pattern, file_path=self.log_file_path)
+        self.assertEqual(count, 0)
     
-    if pattern.startswith('*') and pattern.endswith('*'):
-        pattern = pattern[1:-1]  
-        return pattern in line
-
-    if pattern.startswith('*'):
-        pattern = pattern[1:]  
-        return line.endswith(pattern)
-
-    if pattern.endswith('*'):
-        pattern = pattern[:-1]  
-        return line.startswith(pattern)
-
-    return pattern in line
-
+    @patch('builtins.open', new_callable=mock_open, read_data="2024-09-09 12:03:00 INFO: System started\n")
+    def test_count_pattern_no_match(self, mock_file):
+        pattern = "*asdasd*"
+        count = count_occurrences(pattern=pattern, file_path=self.log_file_path)
+        self.assertEqual(count, 0)
+        
 if __name__ == '__main__':
     unittest.main()
