@@ -1,11 +1,11 @@
 import unittest
-import os
+from os import path
 from unittest.mock import patch, mock_open
 from logparse import count_occurrences 
 
 class LogParseTest(unittest.TestCase):
     def setUp(self):
-        self.log_file_path = 'test/test.log'
+        self.log_file_path = path.join(path.dirname(path.abspath(__file__)), 'test.log')
 
     @patch('builtins.open', new_callable=mock_open, read_data="""2024-09-09 12:00:00 INFO: User logged in
 2024-09-09 12:01:00 ERROR: System failure
