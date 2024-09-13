@@ -5,16 +5,7 @@ from logparse import count_occurrences
 
 class LogParseTest(unittest.TestCase):
     def setUp(self):
-        self.log_file_path = 'test_Alpi.log'
-        with open(self.log_file_path, 'w') as f:
-            f.write("""2024-09-09 12:00:00 INFO: User logged in
-2024-09-09 12:01:00 ERROR: System failure
-2024-09-09 12:02:00 WARNING: Low memory
-2024-09-09 12:03:00 INFO: System started""")
-        
-    def tearDown(self):
-        if os.path.exists(self.log_file_path):
-            os.remove(self.log_file_path)
+        self.log_file_path = 'test/test.log'
 
     @patch('builtins.open', new_callable=mock_open, read_data="""2024-09-09 12:00:00 INFO: User logged in
 2024-09-09 12:01:00 ERROR: System failure
@@ -56,7 +47,19 @@ class LogParseTest(unittest.TestCase):
         count = count_occurrences(severity="ERROR*", file_path=self.log_file_path)
         self.assertEqual(count, 1)
 
+        count = count_occurrences(severity="*ERROR*", file_path=self.log_file_path)
+        self.assertEqual(count, 1)
+
+        count = count_occurrences(severity="*ERROR", file_path=self.log_file_path)
+        self.assertEqual(count, 1)
+
         count = count_occurrences(severity="DEBUG*", file_path=self.log_file_path)
+        self.assertEqual(count, 0)
+
+        count = count_occurrences(severity="DEBUG", file_path=self.log_file_path)
+        self.assertEqual(count, 0)
+
+        count = count_occurrences(severity="asdasdasd*", file_path=self.log_file_path)
         self.assertEqual(count, 0)
     
     @patch('builtins.open', new_callable=mock_open, read_data="""2024-09-09 12:00:00 INFO: User logged in
@@ -73,20 +76,24 @@ class LogParseTest(unittest.TestCase):
         count = count_occurrences(pattern="User*", severity="INFO*", file_path=self.log_file_path)
         self.assertEqual(count, 1)
 
+        count = count_occurrences(pattern="User", severity="INFO*", file_path=self.log_file_path)
+        self.assertEqual(count, 0)
+
+        count = count_occurrences(pattern="User", file_path=self.log_file_path)
+        self.assertEqual(count, 0)
+
     def test_real_file(self):
-        try:
-            with open(self.log_file_path, 'r') as f:
-                log_data = f.read()
+        result = count_occurrences(pattern="*System*", severity="ERROR*", file_path=self.log_file_path)
+        self.assertEqual(result, 1)
 
-            pattern = "*System*"
-            severity = "ERROR*"
+        result = count_occurrences(pattern="*asdasda*", severity="ERROR*", file_path=self.log_file_path)
+        self.assertEqual(result, 0)
 
-            result = count_occurrences(pattern=pattern, severity=severity, file_path=self.log_file_path)
+        result = count_occurrences(pattern="*asdasda*", file_path=self.log_file_path)
+        self.assertEqual(result, 0)
 
-            expected_result = 1  
-            self.assertEqual(result, expected_result)
-        except FileNotFoundError:
-            self.fail(f"file can't find: {self.log_file_path}")
+        result = count_occurrences(pattern="User*", severity="INFO", file_path=self.log_file_path)
+        self.assertEqual(result, 9)
 
 if __name__ == '__main__':
     unittest.main()
