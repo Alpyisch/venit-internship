@@ -1,7 +1,7 @@
 import unittest
 from os import path
 from unittest.mock import patch, mock_open
-from logparse import count_occurrences 
+from logparse import count_occurrences, find_first_or_last
 
 class LogParseTest(unittest.TestCase):
     def setUp(self):
@@ -94,6 +94,28 @@ class LogParseTest(unittest.TestCase):
 
         result = count_occurrences(pattern="User*", severity="INFO", file_path=self.log_file_path)
         self.assertEqual(result, 9)
+
+    @patch('builtins.open', new_callable=mock_open, read_data="""2024-09-09 12:00:00 INFO: User logged in
+2024-09-09 12:01:00 ERROR: System failure
+2024-09-09 12:02:00 WARNING: Low memory
+2024-09-09 12:03:00 INFO: System started""")
+    def test_find_first_log(self, mock_file):
+        result = find_first_or_last(pattern="*System*", file_path=self.log_file_path, find_last=False)
+        self.assertEqual(result, "2024-09-09 12:01:00 ERROR: System failure")
+
+        result = find_first_or_last(severity="ERROR*", file_path=self.log_file_path, find_last=False)
+        self.assertEqual(result, "2024-09-09 12:01:00 ERROR: System failure")
+
+    @patch('builtins.open', new_callable=mock_open, read_data="""2024-09-09 12:00:00 INFO: User logged in
+2024-09-09 12:01:00 ERROR: System failure
+2024-09-09 12:02:00 WARNING: Low memory
+2024-09-09 12:03:00 INFO: System started""")
+    def test_find_last_log(self, mock_file):
+        result = find_first_or_last(pattern="*System*", file_path=self.log_file_path, find_last=True)
+        self.assertEqual(result, "2024-09-09 12:03:00 INFO: System started")
+
+        result = find_first_or_last(severity="INFO*", file_path=self.log_file_path, find_last=True)
+        self.assertEqual(result, "2024-09-09 12:03:00 INFO: System started")
 
 if __name__ == '__main__':
     unittest.main()

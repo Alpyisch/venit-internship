@@ -16,22 +16,23 @@ def create_regex(pattern):
     if pattern.startswith('*') and pattern.endswith('*'):
         pattern = '.*' + re.escape(pattern[1:-1]) + '.*'
     elif pattern.startswith('*'):
-        pattern = '.*' + re.escape(pattern[1:])
+        pattern = '.*' + re.escape(pattern[1:]) + '$'
     elif pattern.endswith('*'):
-        pattern = re.escape(pattern[:-1]) + '.*'
+        pattern = '^' + re.escape(pattern[:-1]) + '.*'
     else:
-        pattern = f'^{re.escape(pattern)}$'
+        pattern = '^' + re.escape(pattern) + '$'
+        
     return re.compile(pattern)
 
 def check_pattern_match(pattern, line):
     if not pattern.startswith('*') and not pattern.endswith('*'):
         return pattern == line
 
-    if pattern.startswith('*') and not pattern.endswith('*'):
-        return line.endswith(pattern[1:])
+    if not pattern.startswith('*') and pattern.endswith('*'):
+        return line.endswith(pattern[:-1])
 
-    if pattern.endswith('*') and not pattern.startswith('*'):
-        return line.startswith(pattern[:-1])
+    if pattern.startswith('*') and not pattern.endswith('*'):
+        return line.startswith(pattern[1:])
 
     if pattern.startswith('*') and pattern.endswith('*'):
         return pattern[1:-1] in line
@@ -74,6 +75,7 @@ def find_first_or_last(pattern=None, severity=None, file_path=None, find_last=Fa
 
     with open(file_path, 'r') as file:
         lines = file.readlines()
+
         if find_last:
             lines.reverse()
 
@@ -85,23 +87,17 @@ def find_first_or_last(pattern=None, severity=None, file_path=None, find_last=Fa
             if pattern_regex and severity_regex:
                 if pattern_regex.search(cleaned_line) and severity_regex.search(line_severity):
                     result_line = line
-                    if not find_last:
-                        break
-                continue
+                    break
 
-            if severity_regex:
+            elif severity_regex:
                 if severity_regex.search(line_severity):
                     result_line = line
-                    if not find_last:
-                        break
-                continue
+                    break
 
-            if pattern_regex:
+            elif pattern_regex:
                 if pattern_regex.search(cleaned_line):
                     result_line = line
-                    if not find_last:
-                        break
-                continue
+                    break
 
     return result_line
 
