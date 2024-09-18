@@ -11,7 +11,7 @@ class LogParseTest(unittest.TestCase):
 2024-09-09 12:01:00 ERROR: System failure
 2024-09-09 12:02:00 WARNING: Low memory
 2024-09-09 12:03:00 INFO: System started""")
-    def test_only_pattern(self, mock_file):
+    def test_count_only_pattern(self, mock_file):
         count = count_occurrences(pattern="User", file_path=self.log_file_path)
         self.assertEqual(count, 0)
 
@@ -40,7 +40,7 @@ class LogParseTest(unittest.TestCase):
 2024-09-09 12:01:00 ERROR: System failure
 2024-09-09 12:02:00 WARNING: Low memory
 2024-09-09 12:03:00 INFO: System started""")
-    def test_only_severity(self, mock_file):
+    def test_count_only_severity(self, mock_file):
         count = count_occurrences(severity="INFO*", file_path=self.log_file_path)
         self.assertEqual(count, 2)
 
@@ -66,7 +66,7 @@ class LogParseTest(unittest.TestCase):
 2024-09-09 12:01:00 ERROR: System failure
 2024-09-09 12:02:00 WARNING: Low memory
 2024-09-09 12:03:00 INFO: System started""")
-    def test_both_pattern_and_severity(self, mock_file):
+    def test_count_both_pattern_and_severity(self, mock_file):
         count = count_occurrences(pattern="*System*", severity="ERROR*", file_path=self.log_file_path)
         self.assertEqual(count, 1)
 
@@ -82,7 +82,7 @@ class LogParseTest(unittest.TestCase):
         count = count_occurrences(pattern="User", file_path=self.log_file_path)
         self.assertEqual(count, 0)
 
-    def test_real_file(self):
+    def test_count_with_real_file(self):
         result = count_occurrences(pattern="*System*", severity="ERROR*", file_path=self.log_file_path)
         self.assertEqual(result, 1)
 
@@ -99,22 +99,62 @@ class LogParseTest(unittest.TestCase):
 2024-09-09 12:01:00 ERROR: System failure
 2024-09-09 12:02:00 WARNING: Low memory
 2024-09-09 12:03:00 INFO: System started""")
-    def test_find_first_log(self, mock_file):
+    def test_first_only_pattern(self, mock_file):
         result = find_first_or_last(pattern="*System*", file_path=self.log_file_path, find_last=False)
         self.assertEqual(result, "2024-09-09 12:01:00 ERROR: System failure")
 
-        result = find_first_or_last(severity="ERROR*", file_path=self.log_file_path, find_last=False)
-        self.assertEqual(result, "2024-09-09 12:01:00 ERROR: System failure")
+        result = find_first_or_last(pattern="ERROR*", file_path=self.log_file_path, find_last=False)
+        self.assertEqual(result, None)
 
     @patch('builtins.open', new_callable=mock_open, read_data="""2024-09-09 12:00:00 INFO: User logged in
 2024-09-09 12:01:00 ERROR: System failure
 2024-09-09 12:02:00 WARNING: Low memory
 2024-09-09 12:03:00 INFO: System started""")
-    def test_find_last_log(self, mock_file):
+    def test_first_only_severity(self, mock_file):
+        result = find_first_or_last(severity="asdasda*", file_path=self.log_file_path, find_last=False)
+        self.assertEqual(result, None)
+
+        result = find_first_or_last(severity="INFO*", file_path=self.log_file_path, find_last=False)
+        self.assertEqual(result, "2024-09-09 12:00:00 INFO: User logged in")
+        
+        result = find_first_or_last(severity="*INFO", file_path=self.log_file_path, find_last=False)
+        self.assertEqual(result, "2024-09-09 12:00:00 INFO: User logged in")
+        
+        result = find_first_or_last(severity="INFO", file_path=self.log_file_path, find_last=False)
+        self.assertEqual(result, "2024-09-09 12:00:00 INFO: User logged in")
+        
+        result = find_first_or_last(severity="*INFO*", file_path=self.log_file_path, find_last=False)
+        self.assertEqual(result, "2024-09-09 12:00:00 INFO: User logged in")
+
+    @patch('builtins.open', new_callable=mock_open, read_data="""2024-09-09 12:00:00 INFO: User logged in
+2024-09-09 12:01:00 ERROR: System failure
+2024-09-09 12:02:00 WARNING: Low memory
+2024-09-09 12:03:00 INFO: System started""")
+    def test_last_only_pattern(self, mock_file):
         result = find_first_or_last(pattern="*System*", file_path=self.log_file_path, find_last=True)
         self.assertEqual(result, "2024-09-09 12:03:00 INFO: System started")
 
+        result = find_first_or_last(pattern="ERROR*", file_path=self.log_file_path, find_last=True)
+        self.assertEqual(result, None)
+
+    @patch('builtins.open', new_callable=mock_open, read_data="""2024-09-09 12:00:00 INFO: User logged in
+2024-09-09 12:01:00 ERROR: System failure
+2024-09-09 12:02:00 WARNING: Low memory
+2024-09-09 12:03:00 INFO: System started""")
+    def test_last_only_severity(self, mock_file):
+        result = find_first_or_last(severity="asdasda*", file_path=self.log_file_path, find_last=True)
+        self.assertEqual(result, None)
+
         result = find_first_or_last(severity="INFO*", file_path=self.log_file_path, find_last=True)
+        self.assertEqual(result, "2024-09-09 12:03:00 INFO: System started")
+        
+        result = find_first_or_last(severity="*INFO", file_path=self.log_file_path, find_last=True)
+        self.assertEqual(result, "2024-09-09 12:03:00 INFO: System started")
+        
+        result = find_first_or_last(severity="INFO", file_path=self.log_file_path, find_last=True)
+        self.assertEqual(result, "2024-09-09 12:03:00 INFO: System started")
+        
+        result = find_first_or_last(severity="*INFO*", file_path=self.log_file_path, find_last=True)
         self.assertEqual(result, "2024-09-09 12:03:00 INFO: System started")
 
 if __name__ == '__main__':
