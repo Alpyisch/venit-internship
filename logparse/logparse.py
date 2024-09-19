@@ -1,5 +1,34 @@
 import argparse
 import re
+from datetime import datetime
+
+def parse_log_line(line, log_format):
+    log_format = log_format.replace('%Y', r'(?P<year>\d{4})')
+    log_format = log_format.replace('%m', r'(?P<month>\d{2})')
+    log_format = log_format.replace('%d', r'(?P<day>\d{2})')
+    log_format = log_format.replace('%H', r'(?P<hour>\d{2})')
+    log_format = log_format.replace('%M', r'(?P<minute>\d{2})')
+    log_format = log_format.replace('%S', r'(?P<second>\d{2})')
+    log_format = log_format.replace('%LEVEL', r'(?P<level>[A-Z]+)')
+    log_format = log_format.replace('%MESSAGE', r'(?P<message>.+)')
+
+    log_regex = re.compile(log_format)
+
+    match = log_regex.match(line)
+    if match:
+        return {
+            'timestamp': datetime(
+                int(match.group('year')),
+                int(match.group('month')),
+                int(match.group('day')),
+                int(match.group('hour')),
+                int(match.group('minute')),
+                int(match.group('second'))
+            ),
+            'level': match.group('level'),
+            'message': match.group('message').strip()
+        }
+    return None
 
 def clean_line(line):
     line = re.sub(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [A-Z]+:\s*', '', line)
@@ -39,16 +68,20 @@ def check_pattern_match(pattern, line):
 
     return False
 
-def count_occurrences(pattern=None, severity=None, file_path=None):
+def count_occurrences(pattern=None, severity=None, file_path=None, log_format=None):
     count = 0
     pattern_regex = create_regex(pattern) if pattern else None
     severity_regex = create_regex(severity) if severity else None
 
     with open(file_path, 'r') as file:
         for line in file:
-            line = line.strip()
-            line_severity = extract_severity(line)
-            cleaned_line = clean_line(line)
+            line_data = parse_log_line(line, log_format)
+
+            if not line_data:
+                continue
+
+            line_severity = line_data['level']
+            cleaned_line = line_data['message']
 
             if pattern_regex and severity_regex:
                 if pattern_regex.search(cleaned_line) and severity_regex.search(line_severity):
@@ -66,6 +99,7 @@ def count_occurrences(pattern=None, severity=None, file_path=None):
                 continue
 
     return count
+
 
 def find_first_or_last(pattern=None, severity=None, file_path=None, find_last=False):
     pattern_regex = create_regex(pattern) if pattern else None
