@@ -100,7 +100,6 @@ def count_occurrences(pattern=None, severity=None, file_path=None, log_format=No
 
     return count
 
-
 def find_first_or_last(pattern=None, severity=None, file_path=None, find_last=False):
     pattern_regex = create_regex(pattern) if pattern else None
     severity_regex = create_regex(severity) if severity else None
@@ -141,6 +140,7 @@ def main():
     parser.add_argument('command', choices=['count', 'first', 'last'], help='The action you want to perform')
     parser.add_argument('--text', help='The text or pattern you want to search for')
     parser.add_argument('--severity', help='The severity level you want to search for')
+    parser.add_argument('--format', help='Log file format (e.g. "%Y-%m-%d %H:%M:%S %LEVEL: %MESSAGE")', default='%Y-%m-%d %H:%M:%S %LEVEL: %MESSAGE')
     parser.add_argument('log_file', help='The path to the log file')
 
     args = parser.parse_args()
