@@ -3,32 +3,39 @@ import re
 from datetime import datetime
 
 def parse_log_line(line, log_format):
-    log_format = log_format.replace('%Y', r'(?P<year>\d{4})')
-    log_format = log_format.replace('%m', r'(?P<month>\d{2})')
-    log_format = log_format.replace('%d', r'(?P<day>\d{2})')
-    log_format = log_format.replace('%H', r'(?P<hour>\d{2})')
-    log_format = log_format.replace('%M', r'(?P<minute>\d{2})')
-    log_format = log_format.replace('%S', r'(?P<second>\d{2})')
-    log_format = log_format.replace('%LEVEL', r'(?P<level>[A-Z]+)')
-    log_format = log_format.replace('%MESSAGE', r'(?P<message>.+)')
+    try:
+        log_format = r'(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2}) (?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2}) (?P<level>[A-Z]+): (?P<message>.+)'
+        log_format = log_format.replace('%Y', r'(?P<year>\d{4})')
+        log_format = log_format.replace('%m', r'(?P<month>\d{2})')
+        log_format = log_format.replace('%d', r'(?P<day>\d{2})')
+        log_format = log_format.replace('%H', r'(?P<hour>\d{2})')
+        log_format = log_format.replace('%M', r'(?P<minute>\d{2})')
+        log_format = log_format.replace('%S', r'(?P<second>\d{2})')
+        log_format = log_format.replace('%LEVEL', r'(?P<level>[A-Z]+)')
+        log_format = log_format.replace('%MESSAGE', r'(?P<message>.+)')
+    
+        log_regex = re.compile(log_format)
 
-    log_regex = re.compile(log_format)
-
-    match = log_regex.match(line)
-    if match:
-        return {
-            'timestamp': datetime(
-                int(match.group('year')),
-                int(match.group('month')),
-                int(match.group('day')),
-                int(match.group('hour')),
-                int(match.group('minute')),
-                int(match.group('second'))
-            ),
-            'level': match.group('level'),
-            'message': match.group('message').strip()
-        }
+        match = log_regex.match(line)
+        if match:
+            return {
+                'timestamp': datetime(
+                    int(match.group('year')),
+                    int(match.group('month')),
+                    int(match.group('day')),
+                    int(match.group('hour')),
+                    int(match.group('minute')),
+                    int(match.group('second'))
+                ),
+                'level': match.group('level'),
+                'message': match.group('message').strip()
+            }
+    except re.error as e:
+        print(f"Regex format error: {e}")
+        print(f"Provided log format: {log_format}")
+        return None
     return None
+
 
 def clean_line(line):
     line = re.sub(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [A-Z]+:\s*', '', line)
@@ -145,25 +152,26 @@ def main():
 
     args = parser.parse_args()
 
-    if args.command == 'count':
-        pattern = args.text
-        severity = args.severity
-        log_file = args.log_file
+    pattern = args.text
+    severity = args.severity
+    log_file = args.log_file
+    log_format = args.format
 
+    if args.command == 'count':
         if pattern and severity:
-            count_combined = count_occurrences(pattern=pattern, severity=severity, file_path=log_file)
+            count_combined = count_occurrences(pattern=pattern, severity=severity, file_path=log_file, log_format=log_format)
             print(f'Matched logs with severity "{severity}" and text "{pattern}": {count_combined}')
         elif pattern:
-            count_text = count_occurrences(pattern=pattern, file_path=log_file)
+            count_text = count_occurrences(pattern=pattern, file_path=log_file, log_format=log_format)
             print(f'Matched logs with text "{pattern}": {count_text}')
         elif severity:
-            count_severity = count_occurrences(severity=severity, file_path=log_file)
+            count_severity = count_occurrences(severity=severity, file_path=log_file, log_format=log_format)
             print(f'Matched logs with severity "{severity}": {count_severity}')
     elif args.command == 'first':
-        result = find_first_or_last(pattern=args.text, severity=args.severity, file_path=args.log_file, find_last=False)
+        result = find_first_or_last(pattern=pattern, severity=severity, file_path=log_file, find_last=False)
         print(f'First matched log: {result}')
     elif args.command == 'last':
-        result = find_first_or_last(pattern=args.text, severity=args.severity, file_path=args.log_file, find_last=True)
+        result = find_first_or_last(pattern=pattern, severity=severity, file_path=log_file, find_last=True)
         print(f'Last matched log: {result}')
 
 if __name__ == '__main__':
