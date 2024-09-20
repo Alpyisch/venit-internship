@@ -25,7 +25,7 @@ def create_regex(pattern):
     elif pattern.endswith('*'):
         pattern = '^' + re.escape(pattern[:-1]) + '.*'
     else:
-        pattern = r'\b' + re.escape(pattern) + r'\b'
+        pattern = '^' + re.escape(pattern) + '$'
         
     return re.compile(pattern)
 
